@@ -30,18 +30,47 @@ namespace ConnectDB.Controllers
         [HttpPost]
         public async Task<IActionResult> Post(Member model)
         {
+     
+            if (string.IsNullOrWhiteSpace(model.Role))
+            {
+                model.Role = "user";
+            }
+
+            if (model.JoinDate == default)
+            {
+                model.JoinDate = DateTime.Now;
+            }
+
             _context.Members.Add(model);
             await _context.SaveChangesAsync();
-            return Ok(model);
+
+            return Ok(new
+            {
+                model.MemberId,
+                model.FullName,
+                model.Email,
+                JoinDate = model.JoinDate.ToString("yyyy-MM-dd"),
+                model.Role
+            });
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, Member model)
         {
-            if (id != model.MemberId) return BadRequest();
-            _context.Entry(model).State = EntityState.Modified;
+            var member = await _context.Members.FindAsync(id);
+            if (member == null) return NotFound();
+
+            if (!string.IsNullOrWhiteSpace(model.FullName))
+                member.FullName = model.FullName;
+
+            if (!string.IsNullOrWhiteSpace(model.Email))
+                member.Email = model.Email;
+
+            if (model.JoinDate != default)
+                member.JoinDate = model.JoinDate;
+
             await _context.SaveChangesAsync();
-            return Ok(model);
+            return Ok(member);
         }
 
         [HttpDelete("{id}")]

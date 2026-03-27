@@ -18,4 +18,9 @@ public class Member
     public string Email { get; set; } = string.Empty;
 
     public DateTime JoinDate { get; set; } = DateTime.Now;
+
+    [Required]
+    [StringLength(20)]
+    public string Role { get; set; } = "user";
 }
+
