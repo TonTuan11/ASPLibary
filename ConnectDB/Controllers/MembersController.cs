@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ConnectDB.Data;
+﻿using ConnectDB.Data;
 using ConnectDB.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.Scripting;
+using Microsoft.EntityFrameworkCore;
 
 namespace ConnectDB.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // bắt buộc login hết
     public class MembersController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -17,29 +20,65 @@ namespace ConnectDB.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get() =>
-            Ok(await _context.Members.ToListAsync());
+        [Authorize(Roles = "ADMIN")]
+        public async Task<IActionResult> Get()
+        {
+            var data = await _context.Members
+                .Select(x => new
+                {
+                    x.MemberId,
+                    x.FullName,
+                    x.Email,
+                    JoinDate = x.JoinDate.ToString("yyyy-MM-dd"),
+                    x.Role
+                })
+                .ToListAsync();
+
+            return Ok(data);
+        }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
             var data = await _context.Members.FindAsync(id);
-            return data == null ? NotFound() : Ok(data);
+            if (data == null) return NotFound();
+
+            return Ok(new
+            {
+                data.MemberId,
+                data.FullName,
+                data.Email,
+                JoinDate = data.JoinDate.ToString("yyyy-MM-dd"),
+                data.Role
+            });
         }
 
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Post(Member model)
         {
-     
-            if (string.IsNullOrWhiteSpace(model.Role))
+            if (string.IsNullOrWhiteSpace(model.FullName) ||
+                string.IsNullOrWhiteSpace(model.Email) ||
+                string.IsNullOrWhiteSpace(model.Password))
             {
-                model.Role = "user";
+                return BadRequest("Thiếu dữ liệu");
             }
 
-            if (model.JoinDate == default)
-            {
-                model.JoinDate = DateTime.Now;
-            }
+            var exists = await _context.Members
+                .AnyAsync(x => x.Email == model.Email);
+
+            if (exists)
+                return BadRequest("Email đã tồn tại");
+
+            model.Role = string.IsNullOrWhiteSpace(model.Role)
+                ? "USER"
+                : model.Role.ToUpper();
+
+            model.JoinDate = model.JoinDate == default
+                ? DateTime.Now
+                : model.JoinDate;
+
+            model.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
 
             _context.Members.Add(model);
             await _context.SaveChangesAsync();
@@ -66,21 +105,31 @@ namespace ConnectDB.Controllers
             if (!string.IsNullOrWhiteSpace(model.Email))
                 member.Email = model.Email;
 
-            if (model.JoinDate != default)
-                member.JoinDate = model.JoinDate;
+            if (!string.IsNullOrWhiteSpace(model.Password))
+                member.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
 
             await _context.SaveChangesAsync();
-            return Ok(member);
+
+            return Ok(new
+            {
+                member.MemberId,
+                member.FullName,
+                member.Email,
+                member.Role
+            });
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Delete(int id)
         {
             var data = await _context.Members.FindAsync(id);
             if (data == null) return NotFound();
+
             _context.Members.Remove(data);
             await _context.SaveChangesAsync();
-            return Ok();
+
+            return Ok("Xóa thành công");
         }
     }
 }

@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ConnectDB.Data;
+﻿using ConnectDB.Data;
 using ConnectDB.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ConnectDB.Controllers
 {
@@ -31,6 +32,7 @@ namespace ConnectDB.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Post(Category model)
         {
             _context.Categories.Add(model);
@@ -39,6 +41,7 @@ namespace ConnectDB.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Put(int id, Category model)
         {
             if (id != model.CategoryId) return BadRequest();
@@ -48,6 +51,7 @@ namespace ConnectDB.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Delete(int id)
         {
             var data = await _context.Categories.FindAsync(id);

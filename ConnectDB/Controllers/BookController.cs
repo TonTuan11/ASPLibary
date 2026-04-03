@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ConnectDB.Data;
+﻿using ConnectDB.Data;
 using ConnectDB.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ConnectDB.Controllers
 {
@@ -44,6 +45,7 @@ namespace ConnectDB.Controllers
 
         // POST
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Post(Book model)
         {
             _context.Books.Add(model);
@@ -53,6 +55,7 @@ namespace ConnectDB.Controllers
 
         // PUT
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Put(int id, Book model)
         {
             if (id != model.BookId) return BadRequest();
@@ -65,6 +68,7 @@ namespace ConnectDB.Controllers
 
         // DELETE
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Delete(int id)
         {
             var book = await _context.Books.FindAsync(id);

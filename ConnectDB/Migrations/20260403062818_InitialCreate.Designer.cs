@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ConnectDB.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260327081926_InitialCreate")]
+    [Migration("20260403062818_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -151,6 +151,10 @@ namespace ConnectDB.Migrations
 
                     b.Property<DateTime>("JoinDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Role")
                         .IsRequired()
