@@ -25,6 +25,8 @@ namespace ConnectDB.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.HasDefaultSchema("library");
+
             base.OnModelCreating(modelBuilder);
 
             // Category self-reference
