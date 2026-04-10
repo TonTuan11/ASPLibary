@@ -6,12 +6,25 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🔗 DB
+//  DB
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
-// 🔑 JWT AUTH
+
+
+// ── CORS ──
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactDev", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173") // frontend của bạn
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+//  JWT AUTH
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -34,7 +47,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 🔐 Authorization
+// 
 builder.Services.AddAuthorization();
 
 // Controller + Swagger
@@ -42,7 +55,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    // 🔑 Thêm Bearer vào Swagger
+    // Thêm Bearer vào Swagger
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -80,7 +93,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// 🔥 QUAN TRỌNG (thiếu là toang)
+app.UseCors("AllowReactDev");
 app.UseAuthentication();
 app.UseAuthorization();
 
