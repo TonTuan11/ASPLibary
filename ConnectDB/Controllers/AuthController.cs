@@ -39,7 +39,7 @@ namespace ConnectDB.Controllers
                 Email = request.Email,
                 Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 Role = "USER",
-                JoinDate = DateTime.Now
+                JoinDate = DateTime.UtcNow
             };
 
             _context.Members.Add(user);
@@ -85,7 +85,7 @@ namespace ConnectDB.Controllers
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddHours(2),
+                expires: DateTime.UtcNow.AddHours(2),
                 signingCredentials: creds
             );
 
