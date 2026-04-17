@@ -17,6 +17,27 @@ namespace ConnectDB.Controllers
             _context = context;
         }
 
+        private void UpdateOverdueStatus(List<BorrowRecord> records)
+        {
+            var now = DateTime.UtcNow;
+
+            foreach (var r in records)
+            {
+                if (r.Status == "Returned") continue;
+
+                var dueDate = r.BorrowDate.AddDays(14);
+
+                if (now > dueDate)
+                    r.Status = "Overdue";
+                else
+                    r.Status = "Borrowing";
+
+                _context.Entry(r).State = EntityState.Modified;
+            }
+        }
+
+
+
         [HttpGet]
         public async Task<IActionResult> Get()
         {
@@ -24,6 +45,9 @@ namespace ConnectDB.Controllers
                 .Include(b => b.Member)
                 .Include(b => b.Book)
                 .ToListAsync();
+
+            UpdateOverdueStatus(data);
+            await _context.SaveChangesAsync();
 
             return Ok(data);
         }
@@ -38,6 +62,37 @@ namespace ConnectDB.Controllers
 
             return data == null ? NotFound() : Ok(data);
         }
+
+
+        // trả sách
+        [HttpPost("return/{id}")]
+        [Authorize(Roles = "USER,ADMIN")]
+        public async Task<IActionResult> ReturnBook(int id)
+        {
+            var borrow = await _context.BorrowRecords
+                .Include(b => b.Book)
+                .FirstOrDefaultAsync(b => b.BorrowId == id);
+
+            if (borrow == null)
+                return NotFound();
+
+            if (borrow.Status == "Returned")
+                return BadRequest("Đã trả rồi");
+
+            borrow.Status = "Returned";
+            borrow.ReturnDate = DateTime.UtcNow;
+
+            if (borrow.Book != null)
+            {
+                borrow.Book.Stock += 1;
+                _context.Entry(borrow.Book).State = EntityState.Modified;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(borrow);
+        }
+
 
 
         [HttpGet("my-books")]
@@ -55,6 +110,9 @@ namespace ConnectDB.Controllers
                 .Include(b => b.Book)
                 .Where(b => b.MemberId == userId)
                 .ToListAsync();
+
+            UpdateOverdueStatus(data);
+            await _context.SaveChangesAsync();
 
             return Ok(data);
         }
