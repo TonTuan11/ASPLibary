@@ -3,7 +3,7 @@ using ConnectDB.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using System.Security.Claims;
 namespace ConnectDB.Controllers
 {
     [Route("api/[controller]")]
@@ -38,6 +38,27 @@ namespace ConnectDB.Controllers
 
             return data == null ? NotFound() : Ok(data);
         }
+
+
+        [HttpGet("my-books")]
+        [Authorize(Roles = "USER,ADMIN")]
+        public async Task<IActionResult> GetMyBooks()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+
+            var data = await _context.BorrowRecords
+                .Include(b => b.Book)
+                .Where(b => b.MemberId == userId)
+                .ToListAsync();
+
+            return Ok(data);
+        }
+
 
         [HttpPost]
         [Authorize(Roles = "ADMIN")]
