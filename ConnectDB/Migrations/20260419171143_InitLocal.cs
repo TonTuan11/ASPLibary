@@ -1,13 +1,12 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace ConnectDB.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitLocal : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,9 +19,9 @@ namespace ConnectDB.Migrations
                 schema: "library",
                 columns: table => new
                 {
-                    AuthorId = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    AuthorId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -34,10 +33,10 @@ namespace ConnectDB.Migrations
                 schema: "library",
                 columns: table => new
                 {
-                    CategoryId = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    ParentId = table.Column<int>(type: "integer", nullable: true)
+                    CategoryId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ParentId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -56,13 +55,13 @@ namespace ConnectDB.Migrations
                 schema: "library",
                 columns: table => new
                 {
-                    MemberId = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    FullName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Password = table.Column<string>(type: "text", nullable: false),
-                    JoinDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Role = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
+                    MemberId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FullName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Password = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    JoinDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Role = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -74,12 +73,13 @@ namespace ConnectDB.Migrations
                 schema: "library",
                 columns: table => new
                 {
-                    BookId = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Title = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    AuthorId = table.Column<int>(type: "integer", nullable: false),
-                    CategoryId = table.Column<int>(type: "integer", nullable: false),
-                    Stock = table.Column<int>(type: "integer", nullable: false)
+                    BookId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    AuthorId = table.Column<int>(type: "int", nullable: false),
+                    CategoryId = table.Column<int>(type: "int", nullable: false),
+                    Stock = table.Column<int>(type: "int", nullable: false),
+                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -105,13 +105,13 @@ namespace ConnectDB.Migrations
                 schema: "library",
                 columns: table => new
                 {
-                    BorrowId = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    MemberId = table.Column<int>(type: "integer", nullable: false),
-                    BookId = table.Column<int>(type: "integer", nullable: false),
-                    BorrowDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ReturnDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
+                    BorrowId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    MemberId = table.Column<int>(type: "int", nullable: false),
+                    BookId = table.Column<int>(type: "int", nullable: false),
+                    BorrowDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ReturnDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
                 },
                 constraints: table =>
                 {

@@ -8,13 +8,13 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 //  DB local
-//builder.Services.AddDbContext<AppDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-//);
-
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
+
+//builder.Services.AddDbContext<AppDbContext>(options =>
+//    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+//);
 
 
 
@@ -103,7 +103,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseStaticFiles();
 app.UseCors("AllowReactDev");
 app.UseAuthentication();
 app.UseAuthorization();

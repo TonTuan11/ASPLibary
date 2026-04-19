@@ -117,41 +117,51 @@ namespace ConnectDB.Controllers
             return Ok(data);
         }
 
-
         [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> Post(BorrowRecord model)
+        [Authorize(Roles = "ADMIN")]
+        public async Task<IActionResult> Post([FromForm] Book model, IFormFile? image)
         {
-            // lấy user từ token
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userIdClaim == null)
-                return Unauthorized();
+            try
+            {
+              
+                model.Author = null;
+                model.Category = null;
 
-            var userId = int.Parse(userIdClaim);
+                var authorExists = await _context.Authors.AnyAsync(a => a.AuthorId == model.AuthorId);
+                var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == model.CategoryId);
 
-            // lấy book
-            var book = await _context.Books.FindAsync(model.BookId);
-            if (book == null)
-                return NotFound("Không tìm thấy sách");
+                if (!authorExists || !categoryExists)
+                {
+                    return BadRequest("Author hoặc Category không tồn tại");
+                }
 
-            if (book.Stock <= 0)
-                return BadRequest("Hết sách");
+                if (image != null)
+                {
+                    var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
 
-            
-            model.BorrowId = 0; 
-            model.MemberId = userId;
-            model.BorrowDate = DateTime.UtcNow;
-            model.ReturnDate = null;
-            model.Status = "Borrowing";
+                    if (!Directory.Exists(folder))
+                        Directory.CreateDirectory(folder);
 
-        
-            book.Stock -= 1;
-            _context.Entry(book).State = EntityState.Modified;
+                    var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
+                    var filePath = Path.Combine(folder, fileName);
 
-            _context.BorrowRecords.Add(model);
-            await _context.SaveChangesAsync();
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await image.CopyToAsync(stream);
+                    }
 
-            return Ok(model);
+                    model.ImageUrl = "/images/" + fileName;
+                }
+
+                _context.Books.Add(model);
+                await _context.SaveChangesAsync();
+
+                return Ok(model);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
 

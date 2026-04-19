@@ -25,4 +25,5 @@ public class Book
     public Category? Category { get; set; }
 
     public int Stock { get; set; }
+    public string? ImageUrl { get; set; }
 }
