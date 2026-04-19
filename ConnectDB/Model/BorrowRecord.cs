@@ -6,6 +6,7 @@ namespace ConnectDB.Models;
 public class BorrowRecord
 {
     [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int BorrowId { get; set; }
 
     // FK Member

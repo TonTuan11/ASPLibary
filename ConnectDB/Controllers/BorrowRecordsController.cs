@@ -119,13 +119,42 @@ namespace ConnectDB.Controllers
 
 
         [HttpPost]
-        [Authorize(Roles = "ADMIN")]
+        [Authorize]
         public async Task<IActionResult> Post(BorrowRecord model)
         {
+            // lấy user từ token
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+
+            // lấy book
+            var book = await _context.Books.FindAsync(model.BookId);
+            if (book == null)
+                return NotFound("Không tìm thấy sách");
+
+            if (book.Stock <= 0)
+                return BadRequest("Hết sách");
+
+            
+            model.BorrowId = 0; 
+            model.MemberId = userId;
+            model.BorrowDate = DateTime.UtcNow;
+            model.ReturnDate = null;
+            model.Status = "Borrowing";
+
+        
+            book.Stock -= 1;
+            _context.Entry(book).State = EntityState.Modified;
+
             _context.BorrowRecords.Add(model);
             await _context.SaveChangesAsync();
+
             return Ok(model);
         }
+
+
 
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
