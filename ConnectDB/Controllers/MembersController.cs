@@ -31,7 +31,6 @@ namespace ConnectDB.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Get()
         {
             var data = await _context.Members
