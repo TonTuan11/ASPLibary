@@ -68,9 +68,8 @@ namespace ConnectDB.Controllers
 
                 if (image != null)
                 {
-                    // Sửa đường dẫn trỏ về thư mục gốc của Project
-                    var rootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-                    var folder = Path.Combine(rootPath, "images");
+                    var rootPath = _env.ContentRootPath;
+                    var folder = Path.Combine(rootPath, "wwwroot", "images");
 
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);
@@ -81,7 +80,6 @@ namespace ConnectDB.Controllers
                     using var stream = new FileStream(filePath, FileMode.Create);
                     await image.CopyToAsync(stream);
 
-                    // Gán vào biến model
                     model.ImageUrl = "/images/" + fileName;
                 }
 
@@ -127,9 +125,8 @@ namespace ConnectDB.Controllers
 
                 if (image != null)
                 {
-                    // Sửa đường dẫn trỏ về thư mục gốc của Project
-                    var rootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-                    var folder = Path.Combine(rootPath, "images");
+                    var rootPath = _env.ContentRootPath;
+                    var folder = Path.Combine(rootPath, "wwwroot", "images");
 
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);
@@ -140,7 +137,6 @@ namespace ConnectDB.Controllers
                     using var stream = new FileStream(filePath, FileMode.Create);
                     await image.CopyToAsync(stream);
 
-                    // Gán vào biến book
                     book.ImageUrl = "/images/" + fileName;
                 }
 
