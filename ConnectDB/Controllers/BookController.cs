@@ -12,15 +12,12 @@ namespace ConnectDB.Controllers
     public class BooksController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly IWebHostEnvironment _env;
 
-        public BooksController(AppDbContext context, IWebHostEnvironment env)
+        public BooksController(AppDbContext context)
         {
             _context = context;
-            _env = env;
         }
 
-        // GET ALL
         [HttpGet]
         public async Task<IActionResult> Get()
         {
@@ -32,7 +29,6 @@ namespace ConnectDB.Controllers
             return Ok(data);
         }
 
-        // GET BY ID
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
@@ -46,58 +42,46 @@ namespace ConnectDB.Controllers
             return Ok(book);
         }
 
-        // CREATE
         [HttpPost]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Post([FromForm] BookCreateDto dto, IFormFile? image)
         {
-            try
+            var authorExists = await _context.Authors.AnyAsync(a => a.AuthorId == dto.AuthorId);
+            var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == dto.CategoryId);
+
+            if (!authorExists || !categoryExists)
+                return BadRequest("Author hoặc Category không tồn tại");
+
+            var model = new Book
             {
-                var authorExists = await _context.Authors.AnyAsync(a => a.AuthorId == dto.AuthorId);
-                var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == dto.CategoryId);
+                Title = dto.Title,
+                AuthorId = dto.AuthorId,
+                CategoryId = dto.CategoryId,
+                Stock = dto.Stock
+            };
 
-                if (!authorExists || !categoryExists)
-                    return BadRequest("Author hoặc Category không tồn tại");
-
-                var model = new Book
-                {
-                    Title = dto.Title,
-                    AuthorId = dto.AuthorId,
-                    CategoryId = dto.CategoryId,
-                    Stock = dto.Stock
-                };
-
-                // UPLOAD IMAGE FIXED
-                if (image != null)
-                {
-                    var folder = Path.Combine(_env.WebRootPath, "images");
-
-                    if (!Directory.Exists(folder))
-                        Directory.CreateDirectory(folder);
-
-                    var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
-                    var filePath = Path.Combine(folder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await image.CopyToAsync(stream);
-                    }
-
-                    model.ImageUrl = "/images/" + fileName;
-                }
-
-                _context.Books.Add(model);
-                await _context.SaveChangesAsync();
-
-                return Ok(model);
-            }
-            catch (Exception ex)
+            if (image != null)
             {
-                return BadRequest(ex.InnerException?.Message ?? ex.Message);
+                var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+
+                if (!Directory.Exists(folder))
+                    Directory.CreateDirectory(folder);
+
+                var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
+                var filePath = Path.Combine(folder, fileName);
+
+                using var stream = new FileStream(filePath, FileMode.Create);
+                await image.CopyToAsync(stream);
+
+                model.ImageUrl = $"{Request.Scheme}://{Request.Host}/images/{fileName}";
             }
+
+            _context.Books.Add(model);
+            await _context.SaveChangesAsync();
+
+            return Ok(model);
         }
 
-        // UPDATE
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Put(int id, [FromForm] BookUpdateDto dto, IFormFile? image)
@@ -105,50 +89,39 @@ namespace ConnectDB.Controllers
             var book = await _context.Books.FindAsync(id);
             if (book == null) return NotFound();
 
-            try
+            if (!string.IsNullOrWhiteSpace(dto.Title))
+                book.Title = dto.Title;
+
+            if (dto.Stock.HasValue)
+                book.Stock = dto.Stock.Value;
+
+            if (dto.AuthorId.HasValue)
+                book.AuthorId = dto.AuthorId.Value;
+
+            if (dto.CategoryId.HasValue)
+                book.CategoryId = dto.CategoryId.Value;
+
+            if (image != null)
             {
-                if (!string.IsNullOrWhiteSpace(dto.Title))
-                    book.Title = dto.Title;
+                var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
 
-                if (dto.Stock.HasValue)
-                    book.Stock = dto.Stock.Value;
+                if (!Directory.Exists(folder))
+                    Directory.CreateDirectory(folder);
 
-                if (dto.AuthorId.HasValue)
-                    book.AuthorId = dto.AuthorId.Value;
+                var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
+                var filePath = Path.Combine(folder, fileName);
 
-                if (dto.CategoryId.HasValue)
-                    book.CategoryId = dto.CategoryId.Value;
+                using var stream = new FileStream(filePath, FileMode.Create);
+                await image.CopyToAsync(stream);
 
-                // IMAGE UPDATE FIXED
-                if (image != null)
-                {
-                    var folder = Path.Combine(_env.WebRootPath, "images");
-
-                    if (!Directory.Exists(folder))
-                        Directory.CreateDirectory(folder);
-
-                    var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
-                    var filePath = Path.Combine(folder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await image.CopyToAsync(stream);
-                    }
-
-                    book.ImageUrl = "/images/" + fileName;
-                }
-
-                await _context.SaveChangesAsync();
-
-                return Ok(book);
+                book.ImageUrl = $"{Request.Scheme}://{Request.Host}/images/{fileName}";
             }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.InnerException?.Message ?? ex.Message);
-            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(book);
         }
 
-        // DELETE
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Delete(int id)

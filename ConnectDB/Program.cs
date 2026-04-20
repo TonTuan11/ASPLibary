@@ -105,9 +105,20 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+var imagesPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "images");
+if (!Directory.Exists(imagesPath))
+{
+    Directory.CreateDirectory(imagesPath);
+}
 
 
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")
+    ),
+    RequestPath = ""
+});
 
 app.UseCors("AllowReactDev");
 app.UseAuthentication();
