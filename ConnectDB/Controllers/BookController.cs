@@ -68,8 +68,17 @@ namespace ConnectDB.Controllers
 
                 if (image != null)
                 {
-                    var rootPath = _env.ContentRootPath;
-                    var folder = Path.Combine(rootPath, "wwwroot", "images");
+                    // 1. Xác định thư mục gốc của project
+                    string projectRoot = _env.ContentRootPath;
+
+                    // 2. Nếu đang chạy ở máy cá nhân (Local Debug), ép đường dẫn về thư mục Source code
+                    // Thư mục chạy thường là .../bin/Debug/net8.0, ta cần nhảy ngược ra ngoài
+                    if (_env.IsDevelopment() && projectRoot.Contains("bin"))
+                    {
+                        projectRoot = Path.GetFullPath(Path.Combine(projectRoot, "..", "..", ".."));
+                    }
+
+                    var folder = Path.Combine(projectRoot, "wwwroot", "images");
 
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);
@@ -80,7 +89,12 @@ namespace ConnectDB.Controllers
                     using var stream = new FileStream(filePath, FileMode.Create);
                     await image.CopyToAsync(stream);
 
-                    model.ImageUrl = "/images/" + fileName;
+                    // Gán đường dẫn để lưu DB
+                    var imageUrl = "/images/" + fileName;
+
+                    // Gán vào đúng biến của từng hàm (model cho Post, book cho Put)
+                    if (HttpContext.Request.Method == "POST") model.ImageUrl = imageUrl;
+                    else book.ImageUrl = imageUrl;
                 }
 
                 _context.Books.Add(model);
@@ -125,8 +139,17 @@ namespace ConnectDB.Controllers
 
                 if (image != null)
                 {
-                    var rootPath = _env.ContentRootPath;
-                    var folder = Path.Combine(rootPath, "wwwroot", "images");
+                    // 1. Xác định thư mục gốc của project
+                    string projectRoot = _env.ContentRootPath;
+
+                    // 2. Nếu đang chạy ở máy cá nhân (Local Debug), ép đường dẫn về thư mục Source code
+                    // Thư mục chạy thường là .../bin/Debug/net8.0, ta cần nhảy ngược ra ngoài
+                    if (_env.IsDevelopment() && projectRoot.Contains("bin"))
+                    {
+                        projectRoot = Path.GetFullPath(Path.Combine(projectRoot, "..", "..", ".."));
+                    }
+
+                    var folder = Path.Combine(projectRoot, "wwwroot", "images");
 
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);
@@ -137,7 +160,12 @@ namespace ConnectDB.Controllers
                     using var stream = new FileStream(filePath, FileMode.Create);
                     await image.CopyToAsync(stream);
 
-                    book.ImageUrl = "/images/" + fileName;
+                    // Gán đường dẫn để lưu DB
+                    var imageUrl = "/images/" + fileName;
+
+                    // Gán vào đúng biến của từng hàm (model cho Post, book cho Put)
+                    if (HttpContext.Request.Method == "POST") model.ImageUrl = imageUrl;
+                    else book.ImageUrl = imageUrl;
                 }
 
                 await _context.SaveChangesAsync();
