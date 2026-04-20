@@ -2,14 +2,14 @@
 using ConnectDB.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ConnectDB.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // bắt buộc login hết
+    [Authorize]
     public class MembersController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -17,6 +17,17 @@ namespace ConnectDB.Controllers
         public MembersController(AppDbContext context)
         {
             _context = context;
+        }
+
+
+        private int GetUserId()
+        {
+            return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+        }
+
+        private string GetUserRole()
+        {
+            return User.FindFirst(ClaimTypes.Role)?.Value;
         }
 
         [HttpGet]
@@ -37,9 +48,16 @@ namespace ConnectDB.Controllers
             return Ok(data);
         }
 
+
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
+            var currentUserId = GetUserId();
+            var role = GetUserRole();
+
+            if (role != "ADMIN" && currentUserId != id)
+                return Forbid();
+
             var data = await _context.Members.FindAsync(id);
             if (data == null) return NotFound();
 
@@ -53,6 +71,7 @@ namespace ConnectDB.Controllers
             });
         }
 
+   
         [HttpPost]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Post(Member model)
@@ -74,10 +93,7 @@ namespace ConnectDB.Controllers
                 ? "USER"
                 : model.Role.ToUpper();
 
-            model.JoinDate = model.JoinDate == default
-                ? DateTime.Now
-                : model.JoinDate;
-
+            model.JoinDate = DateTime.Now;
             model.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
 
             _context.Members.Add(model);
@@ -93,9 +109,16 @@ namespace ConnectDB.Controllers
             });
         }
 
+
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, Member model)
         {
+            var currentUserId = GetUserId();
+            var role = GetUserRole();
+
+            if (role != "ADMIN" && currentUserId != id)
+                return Forbid();
+
             var member = await _context.Members.FindAsync(id);
             if (member == null) return NotFound();
 
@@ -107,6 +130,10 @@ namespace ConnectDB.Controllers
 
             if (!string.IsNullOrWhiteSpace(model.Password))
                 member.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
+
+        
+            if (role == "ADMIN" && !string.IsNullOrWhiteSpace(model.Role))
+                member.Role = model.Role.ToUpper();
 
             await _context.SaveChangesAsync();
 

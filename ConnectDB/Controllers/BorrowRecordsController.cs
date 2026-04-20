@@ -64,9 +64,9 @@ namespace ConnectDB.Controllers
         }
 
 
-        // trả sách
+        
         [HttpPost("return/{id}")]
-        [Authorize(Roles = "USER,ADMIN")]
+        [Authorize]
         public async Task<IActionResult> ReturnBook(int id)
         {
             var borrow = await _context.BorrowRecords
@@ -96,7 +96,7 @@ namespace ConnectDB.Controllers
 
 
         [HttpGet("my-books")]
-        [Authorize(Roles = "USER,ADMIN")]
+        [Authorize]
         public async Task<IActionResult> GetMyBooks()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -118,50 +118,41 @@ namespace ConnectDB.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> Post([FromForm] Book model, IFormFile? image)
+        [Authorize]
+        public async Task<IActionResult> Borrow([FromBody] BorrowRecord model)
         {
-            try
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            var book = await _context.Books.FindAsync(model.BookId);
+            if (book == null) return NotFound("Book not found");
+
+            // ❗ chặn mượn nếu chưa trả
+            var existed = await _context.BorrowRecords
+                .FirstOrDefaultAsync(x =>
+                    x.BookId == model.BookId &&
+                    x.MemberId == userId &&
+                    x.Status != "Returned");
+
+            if (existed != null)
+                return BadRequest("Bạn đang mượn sách này rồi");
+
+            if (book.Stock <= 0)
+                return BadRequest("Hết sách");
+
+            var borrow = new BorrowRecord
             {
-              
-                model.Author = null;
-                model.Category = null;
+                BookId = model.BookId,
+                MemberId = userId,
+                BorrowDate = DateTime.UtcNow,
+                Status = "Borrowing"
+            };
 
-                var authorExists = await _context.Authors.AnyAsync(a => a.AuthorId == model.AuthorId);
-                var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == model.CategoryId);
+            book.Stock--;
 
-                if (!authorExists || !categoryExists)
-                {
-                    return BadRequest("Author hoặc Category không tồn tại");
-                }
+            _context.BorrowRecords.Add(borrow);
+            await _context.SaveChangesAsync();
 
-                if (image != null)
-                {
-                    var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
-
-                    if (!Directory.Exists(folder))
-                        Directory.CreateDirectory(folder);
-
-                    var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
-                    var filePath = Path.Combine(folder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await image.CopyToAsync(stream);
-                    }
-
-                    model.ImageUrl = "/images/" + fileName;
-                }
-
-                _context.Books.Add(model);
-                await _context.SaveChangesAsync();
-
-                return Ok(model);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return Ok(borrow);
         }
 
 
