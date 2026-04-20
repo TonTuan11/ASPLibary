@@ -1,8 +1,8 @@
-﻿using ConnectDB.Data;
+﻿using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
+using ConnectDB.Data;
 using ConnectDB.dto;
 using ConnectDB.Models;
-using CloudinaryDotNet;
-using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,25 +14,15 @@ namespace ConnectDB.Controllers
     public class BooksController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly IConfiguration _config;
+        private readonly Cloudinary _cloudinary;
 
-        public BooksController(AppDbContext context, IConfiguration config)
+        public BooksController(AppDbContext context, Cloudinary cloudinary)
         {
             _context = context;
-            _config = config;
+            _cloudinary = cloudinary;
         }
 
-        private Cloudinary GetCloudinary()
-        {
-            var account = new Account(
-                _config["Cloudinary:CloudName"],
-                _config["Cloudinary:ApiKey"],
-                _config["Cloudinary:ApiSecret"]
-            );
-
-            return new Cloudinary(account);
-        }
-
+        // ================= GET ALL =================
         [HttpGet]
         public async Task<IActionResult> Get()
         {
@@ -44,6 +34,7 @@ namespace ConnectDB.Controllers
             return Ok(data);
         }
 
+        // ================= GET BY ID =================
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
@@ -57,6 +48,7 @@ namespace ConnectDB.Controllers
             return Ok(book);
         }
 
+        // ================= CREATE =================
         [HttpPost]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Post([FromForm] BookCreateDto dto, IFormFile? image)
@@ -67,7 +59,7 @@ namespace ConnectDB.Controllers
             if (!authorExists || !categoryExists)
                 return BadRequest("Author hoặc Category không tồn tại");
 
-            var model = new Book
+            var book = new Book
             {
                 Title = dto.Title,
                 AuthorId = dto.AuthorId,
@@ -75,11 +67,10 @@ namespace ConnectDB.Controllers
                 Stock = dto.Stock
             };
 
+            // ================= CLOUDINARY UPLOAD =================
             if (image != null)
             {
-                var cloudinary = GetCloudinary();
-
-                var uploadResult = await cloudinary.UploadAsync(
+                var uploadResult = await _cloudinary.UploadAsync(
                     new ImageUploadParams
                     {
                         File = new FileDescription(image.FileName, image.OpenReadStream()),
@@ -87,15 +78,16 @@ namespace ConnectDB.Controllers
                     }
                 );
 
-                model.ImageUrl = uploadResult.SecureUrl.ToString();
+                book.ImageUrl = uploadResult.SecureUrl.ToString();
             }
 
-            _context.Books.Add(model);
+            _context.Books.Add(book);
             await _context.SaveChangesAsync();
 
-            return Ok(model);
+            return Ok(book);
         }
 
+        // ================= UPDATE =================
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Put(int id, [FromForm] BookUpdateDto dto, IFormFile? image)
@@ -117,9 +109,7 @@ namespace ConnectDB.Controllers
 
             if (image != null)
             {
-                var cloudinary = GetCloudinary();
-
-                var uploadResult = await cloudinary.UploadAsync(
+                var uploadResult = await _cloudinary.UploadAsync(
                     new ImageUploadParams
                     {
                         File = new FileDescription(image.FileName, image.OpenReadStream()),
@@ -131,10 +121,10 @@ namespace ConnectDB.Controllers
             }
 
             await _context.SaveChangesAsync();
-
             return Ok(book);
         }
 
+        // ================= DELETE =================
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Delete(int id)
