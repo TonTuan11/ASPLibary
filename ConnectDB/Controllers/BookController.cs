@@ -46,12 +46,11 @@ namespace ConnectDB.Controllers
             return Ok(book);
         }
 
-        // ================= CREATE =================
         [HttpPost]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Post(
-            [FromForm] BookCreateDto dto,
-            IFormFile? image)
+      [FromForm] BookCreateDto dto,
+      IFormFile? image)
         {
             try
             {
@@ -71,7 +70,8 @@ namespace ConnectDB.Controllers
 
                 if (image != null)
                 {
-                    var folder = Path.Combine(_env.WebRootPath, "images");
+                    var rootPath = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                    var folder = Path.Combine(rootPath, "images");
 
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);
@@ -95,13 +95,12 @@ namespace ConnectDB.Controllers
                 return BadRequest(ex.InnerException?.Message ?? ex.Message);
             }
         }
-
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Put(
-     int id,
-     [FromForm] BookUpdateDto dto,
-     IFormFile? image)
+    int id,
+    [FromForm] BookUpdateDto dto,
+    IFormFile? image)
         {
             var book = await _context.Books.FindAsync(id);
             if (book == null) return NotFound();
@@ -132,7 +131,8 @@ namespace ConnectDB.Controllers
 
                 if (image != null)
                 {
-                    var folder = Path.Combine(_env.WebRootPath, "images");
+                    var rootPath = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                    var folder = Path.Combine(rootPath, "images");
 
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);

@@ -105,18 +105,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-
-if (!Directory.Exists(wwwrootPath))
-{
-    Directory.CreateDirectory(wwwrootPath);
-}
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(wwwrootPath),
-    RequestPath = ""
-});
+app.UseStaticFiles();
 
 app.UseCors("AllowReactDev");
 app.UseAuthentication();
