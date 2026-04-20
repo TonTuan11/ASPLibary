@@ -98,23 +98,22 @@ namespace ConnectDB.Controllers
             var book = await _context.Books.FindAsync(id);
             if (book == null) return NotFound();
 
-            model.Author = null;
-            model.Category = null;
-
             try
             {
-                if (!string.IsNullOrEmpty(model.Title))
+            
+                if (!string.IsNullOrWhiteSpace(model.Title))
                     book.Title = model.Title;
 
-                if (model.Stock >= 0)
+                if (Request.Form.ContainsKey("stock"))
                     book.Stock = model.Stock;
 
-                if (model.AuthorId != 0)
+                if (Request.Form.ContainsKey("authorId"))
                     book.AuthorId = model.AuthorId;
 
-                if (model.CategoryId != 0)
+                if (Request.Form.ContainsKey("categoryId"))
                     book.CategoryId = model.CategoryId;
 
+             
                 if (image != null)
                 {
                     var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
@@ -140,7 +139,6 @@ namespace ConnectDB.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
