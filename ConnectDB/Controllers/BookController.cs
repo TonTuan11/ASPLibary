@@ -10,14 +10,18 @@ namespace ConnectDB.Controllers
     [ApiController]
     public class BooksController : ControllerBase
     {
-        private readonly AppDbContext _context; 
+        private readonly IWebHostEnvironment _env;
 
-        public BooksController(AppDbContext context)
+        private readonly AppDbContext _context;
+
+
+        public BooksController(AppDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
-        
+
         [HttpGet]
         public async Task<IActionResult> Get()
         {
@@ -60,7 +64,7 @@ namespace ConnectDB.Controllers
 
                 if (image != null)
                 {
-                    var folder = Path.Combine("wwwroot", "images");
+                    var folder = Path.Combine(_env.WebRootPath, "images");
 
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);
