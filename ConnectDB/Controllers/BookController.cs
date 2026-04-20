@@ -48,9 +48,7 @@ namespace ConnectDB.Controllers
 
         [HttpPost]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> Post(
-      [FromForm] BookCreateDto dto,
-      IFormFile? image)
+        public async Task<IActionResult> Post([FromForm] BookCreateDto dto, IFormFile? image)
         {
             try
             {
@@ -70,7 +68,8 @@ namespace ConnectDB.Controllers
 
                 if (image != null)
                 {
-                    var rootPath = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                    // Sửa đường dẫn trỏ về thư mục gốc của Project
+                    var rootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
                     var folder = Path.Combine(rootPath, "images");
 
                     if (!Directory.Exists(folder))
@@ -82,6 +81,7 @@ namespace ConnectDB.Controllers
                     using var stream = new FileStream(filePath, FileMode.Create);
                     await image.CopyToAsync(stream);
 
+                    // Gán vào biến model
                     model.ImageUrl = "/images/" + fileName;
                 }
 
@@ -95,12 +95,10 @@ namespace ConnectDB.Controllers
                 return BadRequest(ex.InnerException?.Message ?? ex.Message);
             }
         }
+
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> Put(
-    int id,
-    [FromForm] BookUpdateDto dto,
-    IFormFile? image)
+        public async Task<IActionResult> Put(int id, [FromForm] BookUpdateDto dto, IFormFile? image)
         {
             var book = await _context.Books.FindAsync(id);
             if (book == null) return NotFound();
@@ -117,7 +115,6 @@ namespace ConnectDB.Controllers
                 {
                     var authorExists = await _context.Authors.AnyAsync(a => a.AuthorId == dto.AuthorId);
                     if (!authorExists) return BadRequest("Author không tồn tại");
-
                     book.AuthorId = dto.AuthorId.Value;
                 }
 
@@ -125,13 +122,13 @@ namespace ConnectDB.Controllers
                 {
                     var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == dto.CategoryId);
                     if (!categoryExists) return BadRequest("Category không tồn tại");
-
                     book.CategoryId = dto.CategoryId.Value;
                 }
 
                 if (image != null)
                 {
-                    var rootPath = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                    // Sửa đường dẫn trỏ về thư mục gốc của Project
+                    var rootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
                     var folder = Path.Combine(rootPath, "images");
 
                     if (!Directory.Exists(folder))
@@ -143,11 +140,11 @@ namespace ConnectDB.Controllers
                     using var stream = new FileStream(filePath, FileMode.Create);
                     await image.CopyToAsync(stream);
 
+                    // Gán vào biến book
                     book.ImageUrl = "/images/" + fileName;
                 }
 
                 await _context.SaveChangesAsync();
-
                 return Ok(book);
             }
             catch (Exception ex)
