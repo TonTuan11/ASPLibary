@@ -20,6 +20,7 @@ namespace ConnectDB.Controllers
             _env = env;
         }
 
+        // GET ALL
         [HttpGet]
         public async Task<IActionResult> Get()
         {
@@ -27,9 +28,11 @@ namespace ConnectDB.Controllers
                 .Include(b => b.Author)
                 .Include(b => b.Category)
                 .ToListAsync();
+
             return Ok(data);
         }
 
+        // GET BY ID
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
@@ -37,10 +40,13 @@ namespace ConnectDB.Controllers
                 .Include(b => b.Author)
                 .Include(b => b.Category)
                 .FirstOrDefaultAsync(b => b.BookId == id);
+
             if (book == null) return NotFound();
+
             return Ok(book);
         }
 
+        // CREATE
         [HttpPost]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Post([FromForm] BookCreateDto dto, IFormFile? image)
@@ -61,27 +67,28 @@ namespace ConnectDB.Controllers
                     Stock = dto.Stock
                 };
 
+                // UPLOAD IMAGE FIXED
                 if (image != null)
                 {
-                    var rootPath = _env.ContentRootPath;
-                    // Logic xử lý nhảy ra khỏi bin nếu ở Local
-                    if (_env.IsDevelopment() && rootPath.Contains("bin"))
-                        rootPath = Path.GetFullPath(Path.Combine(rootPath, "..", "..", ".."));
+                    var folder = Path.Combine(_env.WebRootPath, "images");
 
-                    var folder = Path.Combine(rootPath, "wwwroot", "images");
-                    if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+                    if (!Directory.Exists(folder))
+                        Directory.CreateDirectory(folder);
 
                     var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
                     var filePath = Path.Combine(folder, fileName);
 
-                    using var stream = new FileStream(filePath, FileMode.Create);
-                    await image.CopyToAsync(stream);
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await image.CopyToAsync(stream);
+                    }
 
                     model.ImageUrl = "/images/" + fileName;
                 }
 
                 _context.Books.Add(model);
                 await _context.SaveChangesAsync();
+
                 return Ok(model);
             }
             catch (Exception ex)
@@ -90,6 +97,7 @@ namespace ConnectDB.Controllers
             }
         }
 
+        // UPDATE
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Put(int id, [FromForm] BookUpdateDto dto, IFormFile? image)
@@ -99,30 +107,39 @@ namespace ConnectDB.Controllers
 
             try
             {
-                if (!string.IsNullOrWhiteSpace(dto.Title)) book.Title = dto.Title;
-                if (dto.Stock.HasValue) book.Stock = dto.Stock.Value;
-                if (dto.AuthorId.HasValue) book.AuthorId = dto.AuthorId.Value;
-                if (dto.CategoryId.HasValue) book.CategoryId = dto.CategoryId.Value;
+                if (!string.IsNullOrWhiteSpace(dto.Title))
+                    book.Title = dto.Title;
 
+                if (dto.Stock.HasValue)
+                    book.Stock = dto.Stock.Value;
+
+                if (dto.AuthorId.HasValue)
+                    book.AuthorId = dto.AuthorId.Value;
+
+                if (dto.CategoryId.HasValue)
+                    book.CategoryId = dto.CategoryId.Value;
+
+                // IMAGE UPDATE FIXED
                 if (image != null)
                 {
-                    var rootPath = _env.ContentRootPath;
-                    if (_env.IsDevelopment() && rootPath.Contains("bin"))
-                        rootPath = Path.GetFullPath(Path.Combine(rootPath, "..", "..", ".."));
+                    var folder = Path.Combine(_env.WebRootPath, "images");
 
-                    var folder = Path.Combine(rootPath, "wwwroot", "images");
-                    if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+                    if (!Directory.Exists(folder))
+                        Directory.CreateDirectory(folder);
 
                     var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
                     var filePath = Path.Combine(folder, fileName);
 
-                    using var stream = new FileStream(filePath, FileMode.Create);
-                    await image.CopyToAsync(stream);
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await image.CopyToAsync(stream);
+                    }
 
                     book.ImageUrl = "/images/" + fileName;
                 }
 
                 await _context.SaveChangesAsync();
+
                 return Ok(book);
             }
             catch (Exception ex)
@@ -131,14 +148,17 @@ namespace ConnectDB.Controllers
             }
         }
 
+        // DELETE
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Delete(int id)
         {
             var book = await _context.Books.FindAsync(id);
             if (book == null) return NotFound();
+
             _context.Books.Remove(book);
             await _context.SaveChangesAsync();
+
             return Ok();
         }
     }
