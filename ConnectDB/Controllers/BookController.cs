@@ -1,19 +1,18 @@
 ﻿using ConnectDB.Data;
+using ConnectDB.dto;
 using ConnectDB.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.IO;
+
 namespace ConnectDB.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class BooksController : ControllerBase
     {
-        private readonly IWebHostEnvironment _env;
-
         private readonly AppDbContext _context;
-
+        private readonly IWebHostEnvironment _env;
 
         public BooksController(AppDbContext context, IWebHostEnvironment env)
         {
@@ -21,7 +20,7 @@ namespace ConnectDB.Controllers
             _env = env;
         }
 
-
+        // ================= GET ALL =================
         [HttpGet]
         public async Task<IActionResult> Get()
         {
@@ -33,7 +32,7 @@ namespace ConnectDB.Controllers
             return Ok(data);
         }
 
-  
+        // ================= GET BY ID =================
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
@@ -47,20 +46,28 @@ namespace ConnectDB.Controllers
             return Ok(book);
         }
 
+        // ================= CREATE =================
         [HttpPost]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> Post([FromForm] Book model, IFormFile? image)
+        public async Task<IActionResult> Post(
+            [FromForm] BookCreateDto dto,
+            IFormFile? image)
         {
             try
             {
-                model.Author = null;
-                model.Category = null;
-
-                var authorExists = await _context.Authors.AnyAsync(a => a.AuthorId == model.AuthorId);
-                var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == model.CategoryId);
+                var authorExists = await _context.Authors.AnyAsync(a => a.AuthorId == dto.AuthorId);
+                var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == dto.CategoryId);
 
                 if (!authorExists || !categoryExists)
                     return BadRequest("Author hoặc Category không tồn tại");
+
+                var model = new Book
+                {
+                    Title = dto.Title,
+                    AuthorId = dto.AuthorId,
+                    CategoryId = dto.CategoryId,
+                    Stock = dto.Stock
+                };
 
                 if (image != null)
                 {
@@ -89,31 +96,43 @@ namespace ConnectDB.Controllers
             }
         }
 
-
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> Put(int id, [FromForm] Book model, IFormFile? image)
+        public async Task<IActionResult> Put(
+     int id,
+     [FromForm] BookUpdateDto dto,
+     IFormFile? image)
         {
             var book = await _context.Books.FindAsync(id);
             if (book == null) return NotFound();
 
             try
             {
-                if (!string.IsNullOrWhiteSpace(model.Title))
-                    book.Title = model.Title;
+                if (!string.IsNullOrWhiteSpace(dto.Title))
+                    book.Title = dto.Title;
 
-                if (Request.Form.ContainsKey("Stock"))
-                    book.Stock = model.Stock;
+                if (dto.Stock.HasValue && dto.Stock >= 0)
+                    book.Stock = dto.Stock.Value;
 
-                if (Request.Form.ContainsKey("AuthorId"))
-                    book.AuthorId = model.AuthorId;
+                if (dto.AuthorId.HasValue && dto.AuthorId > 0)
+                {
+                    var authorExists = await _context.Authors.AnyAsync(a => a.AuthorId == dto.AuthorId);
+                    if (!authorExists) return BadRequest("Author không tồn tại");
 
-                if (Request.Form.ContainsKey("CategoryId"))
-                    book.CategoryId = model.CategoryId;
+                    book.AuthorId = dto.AuthorId.Value;
+                }
+
+                if (dto.CategoryId.HasValue && dto.CategoryId > 0)
+                {
+                    var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == dto.CategoryId);
+                    if (!categoryExists) return BadRequest("Category không tồn tại");
+
+                    book.CategoryId = dto.CategoryId.Value;
+                }
 
                 if (image != null)
                 {
-                    var folder = Path.Combine("wwwroot", "images");
+                    var folder = Path.Combine(_env.WebRootPath, "images");
 
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);
@@ -133,10 +152,11 @@ namespace ConnectDB.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
             }
         }
 
+        // ================= DELETE =================
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Delete(int id)

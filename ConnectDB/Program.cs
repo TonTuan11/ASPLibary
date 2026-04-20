@@ -24,7 +24,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactDev", policy =>
     {
-        policy.WithOrigins("http://localhost:5173") // frontend của bạn
+        policy.WithOrigins("http://localhost:5173") // fe
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
