@@ -20,7 +20,6 @@ namespace ConnectDB.Controllers
             _env = env;
         }
 
-        // ================= GET ALL =================
         [HttpGet]
         public async Task<IActionResult> Get()
         {
@@ -28,11 +27,9 @@ namespace ConnectDB.Controllers
                 .Include(b => b.Author)
                 .Include(b => b.Category)
                 .ToListAsync();
-
             return Ok(data);
         }
 
-        // ================= GET BY ID =================
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
@@ -40,9 +37,7 @@ namespace ConnectDB.Controllers
                 .Include(b => b.Author)
                 .Include(b => b.Category)
                 .FirstOrDefaultAsync(b => b.BookId == id);
-
             if (book == null) return NotFound();
-
             return Ok(book);
         }
 
@@ -68,20 +63,13 @@ namespace ConnectDB.Controllers
 
                 if (image != null)
                 {
-                    // 1. Xác định thư mục gốc của project
-                    string projectRoot = _env.ContentRootPath;
+                    var rootPath = _env.ContentRootPath;
+                    // Logic xử lý nhảy ra khỏi bin nếu ở Local
+                    if (_env.IsDevelopment() && rootPath.Contains("bin"))
+                        rootPath = Path.GetFullPath(Path.Combine(rootPath, "..", "..", ".."));
 
-                    // 2. Nếu đang chạy ở máy cá nhân (Local Debug), ép đường dẫn về thư mục Source code
-                    // Thư mục chạy thường là .../bin/Debug/net8.0, ta cần nhảy ngược ra ngoài
-                    if (_env.IsDevelopment() && projectRoot.Contains("bin"))
-                    {
-                        projectRoot = Path.GetFullPath(Path.Combine(projectRoot, "..", "..", ".."));
-                    }
-
-                    var folder = Path.Combine(projectRoot, "wwwroot", "images");
-
-                    if (!Directory.Exists(folder))
-                        Directory.CreateDirectory(folder);
+                    var folder = Path.Combine(rootPath, "wwwroot", "images");
+                    if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
 
                     var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
                     var filePath = Path.Combine(folder, fileName);
@@ -89,17 +77,11 @@ namespace ConnectDB.Controllers
                     using var stream = new FileStream(filePath, FileMode.Create);
                     await image.CopyToAsync(stream);
 
-                    // Gán đường dẫn để lưu DB
-                    var imageUrl = "/images/" + fileName;
-
-                    // Gán vào đúng biến của từng hàm (model cho Post, book cho Put)
-                    if (HttpContext.Request.Method == "POST") model.ImageUrl = imageUrl;
-                    else book.ImageUrl = imageUrl;
+                    model.ImageUrl = "/images/" + fileName;
                 }
 
                 _context.Books.Add(model);
                 await _context.SaveChangesAsync();
-
                 return Ok(model);
             }
             catch (Exception ex)
@@ -117,42 +99,19 @@ namespace ConnectDB.Controllers
 
             try
             {
-                if (!string.IsNullOrWhiteSpace(dto.Title))
-                    book.Title = dto.Title;
-
-                if (dto.Stock.HasValue && dto.Stock >= 0)
-                    book.Stock = dto.Stock.Value;
-
-                if (dto.AuthorId.HasValue && dto.AuthorId > 0)
-                {
-                    var authorExists = await _context.Authors.AnyAsync(a => a.AuthorId == dto.AuthorId);
-                    if (!authorExists) return BadRequest("Author không tồn tại");
-                    book.AuthorId = dto.AuthorId.Value;
-                }
-
-                if (dto.CategoryId.HasValue && dto.CategoryId > 0)
-                {
-                    var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == dto.CategoryId);
-                    if (!categoryExists) return BadRequest("Category không tồn tại");
-                    book.CategoryId = dto.CategoryId.Value;
-                }
+                if (!string.IsNullOrWhiteSpace(dto.Title)) book.Title = dto.Title;
+                if (dto.Stock.HasValue) book.Stock = dto.Stock.Value;
+                if (dto.AuthorId.HasValue) book.AuthorId = dto.AuthorId.Value;
+                if (dto.CategoryId.HasValue) book.CategoryId = dto.CategoryId.Value;
 
                 if (image != null)
                 {
-                    // 1. Xác định thư mục gốc của project
-                    string projectRoot = _env.ContentRootPath;
+                    var rootPath = _env.ContentRootPath;
+                    if (_env.IsDevelopment() && rootPath.Contains("bin"))
+                        rootPath = Path.GetFullPath(Path.Combine(rootPath, "..", "..", ".."));
 
-                    // 2. Nếu đang chạy ở máy cá nhân (Local Debug), ép đường dẫn về thư mục Source code
-                    // Thư mục chạy thường là .../bin/Debug/net8.0, ta cần nhảy ngược ra ngoài
-                    if (_env.IsDevelopment() && projectRoot.Contains("bin"))
-                    {
-                        projectRoot = Path.GetFullPath(Path.Combine(projectRoot, "..", "..", ".."));
-                    }
-
-                    var folder = Path.Combine(projectRoot, "wwwroot", "images");
-
-                    if (!Directory.Exists(folder))
-                        Directory.CreateDirectory(folder);
+                    var folder = Path.Combine(rootPath, "wwwroot", "images");
+                    if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
 
                     var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
                     var filePath = Path.Combine(folder, fileName);
@@ -160,12 +119,7 @@ namespace ConnectDB.Controllers
                     using var stream = new FileStream(filePath, FileMode.Create);
                     await image.CopyToAsync(stream);
 
-                    // Gán đường dẫn để lưu DB
-                    var imageUrl = "/images/" + fileName;
-
-                    // Gán vào đúng biến của từng hàm (model cho Post, book cho Put)
-                    if (HttpContext.Request.Method == "POST") model.ImageUrl = imageUrl;
-                    else book.ImageUrl = imageUrl;
+                    book.ImageUrl = "/images/" + fileName;
                 }
 
                 await _context.SaveChangesAsync();
@@ -177,17 +131,14 @@ namespace ConnectDB.Controllers
             }
         }
 
-        // ================= DELETE =================
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Delete(int id)
         {
             var book = await _context.Books.FindAsync(id);
             if (book == null) return NotFound();
-
             _context.Books.Remove(book);
             await _context.SaveChangesAsync();
-
             return Ok();
         }
     }
