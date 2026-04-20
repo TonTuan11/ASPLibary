@@ -17,7 +17,7 @@ namespace ConnectDB.Controllers
             _context = context;
         }
 
-        // GET: api/books
+        
         [HttpGet]
         public async Task<IActionResult> Get()
         {
@@ -29,7 +29,7 @@ namespace ConnectDB.Controllers
             return Ok(data);
         }
 
-        // GET: api/books/1
+  
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
@@ -90,20 +90,54 @@ namespace ConnectDB.Controllers
             }
         }
 
-        // PUT
+
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> Put(int id, Book model)
+        public async Task<IActionResult> Put(int id, [FromForm] Book model, IFormFile? image)
         {
-            if (id != model.BookId) return BadRequest();
+            var book = await _context.Books.FindAsync(id);
+            if (book == null) return NotFound();
 
-            _context.Entry(model).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            try
+            {
+                // 👉 update từng field (nếu có gửi)
+                book.Title = string.IsNullOrEmpty(model.Title) ? book.Title : model.Title;
+                book.Description = string.IsNullOrEmpty(model.Description) ? book.Description : model.Description;
+                book.Stock = model.Stock != 0 ? model.Stock : book.Stock;
 
-            return Ok(model);
+                if (model.AuthorId != 0)
+                    book.AuthorId = model.AuthorId;
+
+                if (model.CategoryId != 0)
+                    book.CategoryId = model.CategoryId;
+
+                if (image != null)
+                {
+                    var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+
+                    if (!Directory.Exists(folder))
+                        Directory.CreateDirectory(folder);
+
+                    var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
+                    var filePath = Path.Combine(folder, fileName);
+
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await image.CopyToAsync(stream);
+
+                    book.ImageUrl = "/images/" + fileName;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(book);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        // DELETE
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Delete(int id)
