@@ -49,21 +49,18 @@ namespace ConnectDB.Controllers
         {
             try
             {
-               
                 model.Author = null;
                 model.Category = null;
 
-            
                 var authorExists = await _context.Authors.AnyAsync(a => a.AuthorId == model.AuthorId);
                 var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == model.CategoryId);
 
                 if (!authorExists || !categoryExists)
                     return BadRequest("Author hoặc Category không tồn tại");
 
-             
                 if (image != null)
                 {
-                    var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                    var folder = Path.Combine("wwwroot", "images");
 
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);
@@ -77,9 +74,7 @@ namespace ConnectDB.Controllers
                     model.ImageUrl = "/images/" + fileName;
                 }
 
-             
-                _context.Entry(model).State = EntityState.Added;
-
+                _context.Books.Add(model);
                 await _context.SaveChangesAsync();
 
                 return Ok(model);
@@ -100,23 +95,21 @@ namespace ConnectDB.Controllers
 
             try
             {
-            
                 if (!string.IsNullOrWhiteSpace(model.Title))
                     book.Title = model.Title;
 
-                if (Request.Form.ContainsKey("stock"))
+                if (Request.Form.ContainsKey("Stock"))
                     book.Stock = model.Stock;
 
-                if (Request.Form.ContainsKey("authorId"))
+                if (Request.Form.ContainsKey("AuthorId"))
                     book.AuthorId = model.AuthorId;
 
-                if (Request.Form.ContainsKey("categoryId"))
+                if (Request.Form.ContainsKey("CategoryId"))
                     book.CategoryId = model.CategoryId;
 
-             
                 if (image != null)
                 {
-                    var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                    var folder = Path.Combine("wwwroot", "images");
 
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);

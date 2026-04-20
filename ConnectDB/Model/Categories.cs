@@ -12,7 +12,7 @@ public class Category
     [StringLength(50)]
     public string Name { get; set; } = string.Empty;
 
-    // FK tới chính nó
+
     public int? ParentId { get; set; }
 
     [ForeignKey("ParentId")]
