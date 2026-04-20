@@ -1,6 +1,8 @@
 ﻿using ConnectDB.Data;
 using ConnectDB.dto;
 using ConnectDB.Models;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +14,23 @@ namespace ConnectDB.Controllers
     public class BooksController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _config;
 
-        public BooksController(AppDbContext context)
+        public BooksController(AppDbContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
+        }
+
+        private Cloudinary GetCloudinary()
+        {
+            var account = new Account(
+                _config["Cloudinary:CloudName"],
+                _config["Cloudinary:ApiKey"],
+                _config["Cloudinary:ApiSecret"]
+            );
+
+            return new Cloudinary(account);
         }
 
         [HttpGet]
@@ -62,18 +77,17 @@ namespace ConnectDB.Controllers
 
             if (image != null)
             {
-                var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                var cloudinary = GetCloudinary();
 
-                if (!Directory.Exists(folder))
-                    Directory.CreateDirectory(folder);
+                var uploadResult = await cloudinary.UploadAsync(
+                    new ImageUploadParams
+                    {
+                        File = new FileDescription(image.FileName, image.OpenReadStream()),
+                        Folder = "books"
+                    }
+                );
 
-                var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
-                var filePath = Path.Combine(folder, fileName);
-
-                using var stream = new FileStream(filePath, FileMode.Create);
-                await image.CopyToAsync(stream);
-
-                model.ImageUrl = $"{Request.Scheme}://{Request.Host}/images/{fileName}";
+                model.ImageUrl = uploadResult.SecureUrl.ToString();
             }
 
             _context.Books.Add(model);
@@ -103,18 +117,17 @@ namespace ConnectDB.Controllers
 
             if (image != null)
             {
-                var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                var cloudinary = GetCloudinary();
 
-                if (!Directory.Exists(folder))
-                    Directory.CreateDirectory(folder);
+                var uploadResult = await cloudinary.UploadAsync(
+                    new ImageUploadParams
+                    {
+                        File = new FileDescription(image.FileName, image.OpenReadStream()),
+                        Folder = "books"
+                    }
+                );
 
-                var fileName = Guid.NewGuid() + Path.GetExtension(image.FileName);
-                var filePath = Path.Combine(folder, fileName);
-
-                using var stream = new FileStream(filePath, FileMode.Create);
-                await image.CopyToAsync(stream);
-
-                book.ImageUrl = $"{Request.Scheme}://{Request.Host}/images/{fileName}";
+                book.ImageUrl = uploadResult.SecureUrl.ToString();
             }
 
             await _context.SaveChangesAsync();
