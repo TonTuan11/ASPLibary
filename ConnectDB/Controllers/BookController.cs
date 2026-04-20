@@ -3,7 +3,7 @@ using ConnectDB.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using System.IO;
 namespace ConnectDB.Controllers
 {
     [Route("api/[controller]")]
@@ -98,12 +98,19 @@ namespace ConnectDB.Controllers
             var book = await _context.Books.FindAsync(id);
             if (book == null) return NotFound();
 
+            model.Author = null;
+            model.Category = null;
+
             try
             {
-                // 👉 update từng field (nếu có gửi)
-                book.Title = string.IsNullOrEmpty(model.Title) ? book.Title : model.Title;
-                book.Description = string.IsNullOrEmpty(model.Description) ? book.Description : model.Description;
-                book.Stock = model.Stock != 0 ? model.Stock : book.Stock;
+                if (!string.IsNullOrEmpty(model.Title))
+                    book.Title = model.Title;
+
+                if (!string.IsNullOrEmpty(model.Description))
+                    book.Description = model.Description;
+
+                if (model.Stock >= 0)
+                    book.Stock = model.Stock;
 
                 if (model.AuthorId != 0)
                     book.AuthorId = model.AuthorId;
