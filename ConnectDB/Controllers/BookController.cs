@@ -106,9 +106,6 @@ namespace ConnectDB.Controllers
                 if (!string.IsNullOrEmpty(model.Title))
                     book.Title = model.Title;
 
-                if (!string.IsNullOrEmpty(model.Description))
-                    book.Description = model.Description;
-
                 if (model.Stock >= 0)
                     book.Stock = model.Stock;
 
