@@ -9,7 +9,6 @@ namespace ConnectDB.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class MembersController : ControllerBase
     {
         private readonly AppDbContext _context;
