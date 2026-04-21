@@ -126,7 +126,7 @@ namespace ConnectDB.Controllers
             var book = await _context.Books.FindAsync(model.BookId);
             if (book == null) return NotFound("Book not found");
 
-            // ❗ chặn mượn nếu chưa trả
+            // chặn mượn nếu chưa trả
             var existed = await _context.BorrowRecords
                 .FirstOrDefaultAsync(x =>
                     x.BookId == model.BookId &&

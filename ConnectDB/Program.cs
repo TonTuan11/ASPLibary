@@ -17,12 +17,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 
 
-// ── CORS ──
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactDev", policy =>
     {
-        policy.WithOrigins("http://localhost:5173") // fe
+        policy.WithOrigins("http://localhost:5173",
+                      "https://as-pfrontend.vercel.app") 
               .AllowAnyHeader()
               .AllowAnyMethod();
     });

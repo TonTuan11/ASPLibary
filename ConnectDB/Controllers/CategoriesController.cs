@@ -39,6 +39,8 @@ namespace ConnectDB.Controllers
             await _context.SaveChangesAsync();
             return Ok(model);
         }
+
+
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Put(int id, Category model)

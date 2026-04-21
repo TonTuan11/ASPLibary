@@ -22,7 +22,7 @@ namespace ConnectDB.Controllers
             _cloudinary = cloudinary;
         }
 
-        // ================= GET ALL =================
+       
         [HttpGet]
         public async Task<IActionResult> Get()
         {
@@ -34,7 +34,7 @@ namespace ConnectDB.Controllers
             return Ok(data);
         }
 
-        // ================= GET BY ID =================
+        
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
@@ -48,7 +48,7 @@ namespace ConnectDB.Controllers
             return Ok(book);
         }
 
-        // ================= CREATE =================
+        
         [HttpPost]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Post([FromForm] BookCreateDto dto, IFormFile? image)
@@ -67,7 +67,7 @@ namespace ConnectDB.Controllers
                 Stock = dto.Stock
             };
 
-            // ================= CLOUDINARY UPLOAD =================
+            // CLOUDINARY UPLOAD
             if (image != null)
             {
                 var uploadResult = await _cloudinary.UploadAsync(
@@ -87,7 +87,7 @@ namespace ConnectDB.Controllers
             return Ok(book);
         }
 
-        // ================= UPDATE =================
+
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Put(int id, [FromForm] BookUpdateDto dto, IFormFile? image)
@@ -124,7 +124,6 @@ namespace ConnectDB.Controllers
             return Ok(book);
         }
 
-        // ================= DELETE =================
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Delete(int id)
