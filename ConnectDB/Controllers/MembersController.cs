@@ -150,7 +150,7 @@ namespace ConnectDB.Controllers
             if (member == null)
                 return NotFound();
 
-         
+            // check còn sách chưa trả
             var isBorrowing = await _context.BorrowRecords
                 .AnyAsync(x => x.MemberId == id && x.ReturnDate == null);
 
@@ -158,14 +158,23 @@ namespace ConnectDB.Controllers
             {
                 return BadRequest(new
                 {
-                    message = "Member has active borrowing records"
+                    message = "Member still has borrowing books"
                 });
             }
 
+            // xoá các record đã trả 
+            var returnedRecords = await _context.BorrowRecords
+                .Where(x => x.MemberId == id && x.ReturnDate != null)
+                .ToListAsync();
+
+            _context.BorrowRecords.RemoveRange(returnedRecords);
+
+            // xoá member
             _context.Members.Remove(member);
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Xóa thành công" });
         }
     }
-}
+}   
