@@ -39,15 +39,25 @@ namespace ConnectDB.Controllers
             await _context.SaveChangesAsync();
             return Ok(model);
         }
-
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Put(int id, Category model)
         {
             if (id != model.CategoryId) return BadRequest();
-            _context.Entry(model).State = EntityState.Modified;
+
+            var existing = await _context.Categories.FindAsync(id);
+            if (existing == null) return NotFound();
+
+            
+            if (!string.IsNullOrEmpty(model.Name))
+                existing.Name = model.Name;
+
+            if (model.ParentId.HasValue)
+                existing.ParentId = model.ParentId;
+
             await _context.SaveChangesAsync();
-            return Ok(model);
+
+            return Ok(existing);
         }
 
         [HttpDelete("{id}")]

@@ -1,4 +1,5 @@
 ﻿using ConnectDB.Data;
+using ConnectDB.dto;
 using ConnectDB.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -107,9 +108,8 @@ namespace ConnectDB.Controllers
             });
         }
 
-
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, Member model)
+        public async Task<IActionResult> Put(int id, UpdateMemberDto model)
         {
             var currentUserId = GetUserId();
             var role = GetUserRole();
@@ -120,18 +120,15 @@ namespace ConnectDB.Controllers
             var member = await _context.Members.FindAsync(id);
             if (member == null) return NotFound();
 
+       
             if (!string.IsNullOrWhiteSpace(model.FullName))
                 member.FullName = model.FullName;
 
             if (!string.IsNullOrWhiteSpace(model.Email))
                 member.Email = model.Email;
 
-            if (!string.IsNullOrWhiteSpace(model.Password))
+            if (currentUserId == id && !string.IsNullOrWhiteSpace(model.Password))
                 member.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
-
-        
-            if (role == "ADMIN" && !string.IsNullOrWhiteSpace(model.Role))
-                member.Role = model.Role.ToUpper();
 
             await _context.SaveChangesAsync();
 
