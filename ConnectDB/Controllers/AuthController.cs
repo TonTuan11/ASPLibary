@@ -23,7 +23,7 @@ namespace ConnectDB.Controllers
             _config = config;
         }
 
-        // REGISTER
+        // register
         [HttpPost("register")]
         public async Task<IActionResult> Register(Member request)
         {
@@ -48,7 +48,7 @@ namespace ConnectDB.Controllers
             return Ok("Register thành công");
         }
 
-        // LOGIN
+        // login
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
@@ -65,7 +65,31 @@ namespace ConnectDB.Controllers
             return Ok(new { token });
         }
 
-        //  TẠO JWT
+
+        [HttpPost("admin-login")]
+        public async Task<IActionResult> AdminLogin(LoginRequest request)
+        {
+            var user = await _context.Members
+                .FirstOrDefaultAsync(x => x.Email == request.Email);
+
+            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
+            {
+                return Unauthorized("Sai tài khoản hoặc mật khẩu");
+            }
+
+            if (user.Role != "ADMIN")
+            {
+                return Unauthorized("Bạn không có quyền admin");
+            }
+
+            var token = GenerateJwt(user);
+
+            return Ok(new { token });
+        }
+
+
+
+        //  tạo jwt
         private string GenerateJwt(Member user)
         {
             var claims = new[]
