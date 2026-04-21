@@ -141,17 +141,31 @@ namespace ConnectDB.Controllers
             });
         }
 
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> Delete(int id)
         {
-            var data = await _context.Members.FindAsync(id);
-            if (data == null) return NotFound();
+            var member = await _context.Members.FindAsync(id);
+            if (member == null)
+                return NotFound();
 
-            _context.Members.Remove(data);
+         
+            var isBorrowing = await _context.BorrowRecords
+                .AnyAsync(x => x.MemberId == id && x.ReturnDate == null);
+
+            if (isBorrowing)
+            {
+                return BadRequest(new
+                {
+                    message = "Member has active borrowing records"
+                });
+            }
+
+            _context.Members.Remove(member);
             await _context.SaveChangesAsync();
 
-            return Ok("Xóa thành công");
+            return Ok(new { message = "Xóa thành công" });
         }
     }
 }
