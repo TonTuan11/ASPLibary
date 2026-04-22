@@ -127,7 +127,7 @@ namespace ConnectDB.Controllers
             if (!string.IsNullOrWhiteSpace(model.Email))
                 member.Email = model.Email;
 
-            if (currentUserId == id && !string.IsNullOrWhiteSpace(model.Password))
+            if (!string.IsNullOrWhiteSpace(model.Password))
                 member.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
 
             await _context.SaveChangesAsync();
@@ -158,7 +158,7 @@ namespace ConnectDB.Controllers
             {
                 return BadRequest(new
                 {
-                    message = "Member still has borrowing books"
+                    message = "Người dùng còn sách đang mượn chưa trả"
                 });
             }
 
